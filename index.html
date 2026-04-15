@@ -1,256 +1,505 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天才</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Microsoft YaHei', sans-serif;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>便签</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #f5f5f7;
+    color: #333;
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+    padding: 20px 0 100px;
+  }
+  .container {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 10px;
+  }
 
-        body {
-            background-color: #f8f9fa;
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
+  /* 首页样式 */
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 0 10px;
+  }
+  .top-bar h1 {
+    font-size: 32px;
+    font-weight: 700;
+  }
+  .theme-btn {
+    padding: 8px 14px;
+    border-radius: 20px;
+    border: none;
+    background: #e5e7eb;
+    font-size: 15px;
+    cursor: pointer;
+  }
 
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-        }
+  /* 卡片样式（全屏宽度） */
+  .card-wrapper {
+    width: 100%;
+    margin: 12px 0;
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+  .delete-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 70px;
+    height: 100%;
+    background: #ff4757;
+    color: #fff;
+    border: none;
+    font-size: 14px;
+    z-index: 1;
+  }
+  .card {
+    padding: 16px;
+    background: #fff;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.3s ease;
+    user-select: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    cursor: pointer;
+  }
+  .card h4 {
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+  .card p {
+    font-size: 14px;
+    color: #666;
+  }
+  .card .time {
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
+  }
 
-        .input-area {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
+  .empty {
+    text-align: center;
+    color: #999;
+    padding: 60px 0;
+    font-size: 16px;
+  }
 
-        input, textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-            margin-bottom: 15px;
-        }
+  /* 编辑页 */
+  #editor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #f5f5f7;
+    z-index: 100;
+    display: none;
+  }
+  .editor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+  }
+  #back {
+    font-size: 32px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: #007aff;
+  }
+  /* 撤销重做居中 */
+  .editor-middle {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+  }
+  .editor-right {
+    display: flex;
+    align-items: center;
+  }
+  .action-btn {
+    background: none;
+    border: none;
+    font-size: 26px;
+    color: #007aff;
+    cursor: pointer;
+  }
+  .editor-info {
+    padding: 10px 20px;
+    font-size: 16px;
+    color: #999;
+  }
+  /* 标题字号稍微缩小 */
+  #noteTitle {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 34px;
+    font-weight: 700;
+    padding: 10px 20px;
+    color: #333;
+  }
+  #noteContent {
+    width: 100%;
+    min-height: calc(100vh - 180px);
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 24px;
+    line-height: 1.6;
+    padding: 10px 20px;
+    color: #333;
+    resize: none;
+  }
 
-        textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
+  /* 悬浮加号 */
+  .fab {
+    position: fixed;
+    right: 30px;
+    bottom: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #007aff;
+    color: #fff;
+    font-size: 32px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,122,255,0.2);
+    cursor: pointer;
+    z-index: 999;
+  }
 
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        .notes-list {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .note-item {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .note-item:last-child {
-            border-bottom: none;
-        }
-
-        .note-title {
-            font-weight: bold;
-            font-size: 18px;
-            margin-bottom: 5px;
-            color: #333;
-        }
-
-        .note-content {
-            font-size: 14px;
-            color: #666;
-            line-height: 1.5;
-            margin-bottom: 10px;
-        }
-
-        .note-actions {
-            text-align: right;
-        }
-
-        .note-actions button {
-            margin-left: 10px;
-            padding: 6px 12px;
-            font-size: 14px;
-        }
-
-        .edit-btn {
-            background-color: #28a745;
-        }
-
-        .edit-btn:hover {
-            background-color: #218838;
-        }
-
-        .delete-btn {
-            background-color: #dc3545;
-        }
-
-        .delete-btn:hover {
-            background-color: #c82333;
-        }
-
-        .empty-state {
-            text-align: center;
-            color: #999;
-            padding: 40px 0;
-        }
-    </style>
+  /* 深色模式 */
+  body.dark {
+    background: #000;
+    color: #fff;
+  }
+  body.dark .theme-btn {
+    background: #3a3a3c;
+    color: #fff;
+  }
+  body.dark .card {
+    background: #1c1c1e;
+    color: #fff;
+  }
+  body.dark .card p {
+    color: #aaa;
+  }
+  body.dark .card .time {
+    color: #888;
+  }
+  body.dark #editor {
+    background: #000;
+  }
+  body.dark .editor-header {
+    border-bottom-color: #333;
+  }
+  body.dark .editor-info {
+    color: #888;
+  }
+  body.dark #noteTitle,
+  body.dark #noteContent {
+    color: #fff;
+  }
+</style>
 </head>
+
 <body>
-    <h1>天才便签</h1>
-
-    <div class="input-area">
-        <input type="text" id="noteTitle" placeholder="标题">
-        <textarea id="noteContent" placeholder="内容"></textarea>
-        <button onclick="saveNote()">保存</button>
+  <!-- 首页 -->
+  <div id="home" class="container">
+    <div class="top-bar">
+      <h1>便签</h1>
+      <button class="theme-btn" id="toggleDark">暗色模式</button>
     </div>
+    <div id="notesList"></div>
+    <div class="empty" id="empty">暂无便签</div>
+  </div>
 
-    <div class="notes-list" id="notesList">
-        <div class="empty-state">暂无便签</div>
+  <!-- 编辑页 -->
+  <div id="editor">
+    <div class="editor-header">
+      <button id="back">&larr;</button>
+      <div class="editor-middle">
+        <button class="action-btn" id="undoBtn">&#8635;</button>
+        <button class="action-btn" id="redoBtn">&#8634;</button>
+      </div>
+      <div class="editor-right">
+        <button class="action-btn" id="moreBtn">&#8942;</button>
+      </div>
     </div>
+    <div class="editor-info" id="editorInfo">2026/4/16 | 0字</div>
+    <input type="text" id="noteTitle" placeholder="标题">
+    <textarea id="noteContent" placeholder="内容"></textarea>
+  </div>
 
-    <script>
-        // 全局变量存储当前编辑的便签ID
-        let currentEditId = null;
+  <!-- 新建按钮 -->
+  <button class="fab" id="add">+</button>
 
-        // 页面加载时渲染便签
-        document.addEventListener('DOMContentLoaded', renderNotes);
+<script>
+const STORAGE_KEY = 'my_notes'
+let currentId = null
+let startX = 0
+let currentCard = null
+let undoStack = []
+let redoStack = []
 
-        // 保存便签
-        function saveNote() {
-            const title = document.getElementById('noteTitle').value.trim();
-            const content = document.getElementById('noteContent').value.trim();
+// 读取与保存
+function getNotes() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+}
+function saveNotes(notes) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(notes))
+  render()
+}
 
-            if (!title || !content) {
-                alert('标题和内容不能为傻蛋！');
-                return;
-            }
+// 时间
+function timeStr() {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth()+1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const h = String(d.getHours()).padStart(2, '0')
+  const i = String(d.getMinutes()).padStart(2, '0')
+  return `${y}/${m}/${day} ${h}:${i}`
+}
 
-            const notes = getNotes();
+// 更新编辑页信息
+function updateEditorInfo() {
+  const content = document.getElementById('noteContent').value
+  const title = document.getElementById('noteTitle').value
+  const totalLen = (title || '').length + (content || '').length
+  document.getElementById('editorInfo').textContent = `${timeStr()} | ${totalLen}字`
+}
 
-            if (currentEditId) {
-                // 编辑模式
-                const index = notes.findIndex(note => note.id === currentEditId);
-                if (index !== -1) {
-                    notes[index].title = title;
-                    notes[index].content = content;
-                }
-                currentEditId = null;
-            } else {
-                // 新建模式
-                const newNote = {
-                    id: Date.now().toString(),
-                    title: title,
-                    content: content
-                };
-                notes.push(newNote);
-            }
+// 渲染首页
+function render() {
+  const notes = getNotes()
+  const list = document.getElementById('notesList')
+  const empty = document.getElementById('empty')
 
-            saveNotes(notes);
-            renderNotes();
-            clearInput();
-        }
+  if (notes.length === 0) {
+    empty.style.display = 'block'
+    list.innerHTML = ''
+    return
+  }
 
-        // 编辑便签
-        function editNote(id) {
-            const notes = getNotes();
-            const note = notes.find(note => note.id === id);
-            if (note) {
-                document.getElementById('noteTitle').value = note.title;
-                document.getElementById('noteContent').value = note.content;
-                currentEditId = id;
-                // 滚动到输入区域
-                document.querySelector('.input-area').scrollIntoView({ behavior: 'smooth' });
-            }
-        }
+  empty.style.display = 'none'
+  list.innerHTML = notes.map(n => `
+    <div class="card-wrapper" data-id="${n.id}">
+      <button class="delete-btn">删除</button>
+      <div class="card">
+        <h4>${n.title}</h4>
+        <p>${n.content.replace(/\n/g, ' ')}</p>
+        <div class="time">${n.time}</div>
+      </div>
+    </div>
+  `).join('')
 
-        // 删除便签
-        function deleteNote(id) {
-            if (confirm('确定要删除吗？')) {
-                let notes = getNotes();
-                notes = notes.filter(note => note.id !== id);
-                saveNotes(notes);
-                renderNotes();
-            }
-        }
+  bindSlide()
+  bindDelete()
+}
 
-        // 渲染便签列表
-        function renderNotes() {
-            const notes = getNotes();
-            const notesList = document.getElementById('notesList');
+// 左滑删除
+function bindSlide() {
+  const cards = document.querySelectorAll('.card')
+  cards.forEach(card => {
+    card.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX
+      currentCard = card
+      resetAll()
+    })
+    card.addEventListener('touchmove', e => {
+      const moveX = e.touches[0].clientX
+      const diff = startX - moveX
+      if (diff > 0) {
+        currentCard.style.transform = `translateX(-${Math.min(diff, 70)}px)`
+      }
+    })
+    card.addEventListener('touchend', () => {
+      const t = getComputedStyle(currentCard).transform
+      const x = parseFloat(t.split(',')[4])
+      if (Math.abs(x) > 35) {
+        currentCard.style.transform = 'translateX(-70px)'
+      } else {
+        currentCard.style.transform = 'translateX(0)'
+      }
+    })
+    card.addEventListener('click', () => {
+      const id = +card.closest('.card-wrapper').dataset.id
+      edit(id)
+    })
+  })
+}
 
-            if (notes.length === 0) {
-                notesList.innerHTML = '<div class="empty-state">暂无便签</div>';
-                return;
-            }
+// 重置所有卡片
+function resetAll() {
+  document.querySelectorAll('.card').forEach(c => {
+    c.style.transform = 'translateX(0)'
+  })
+}
 
-            notesList.innerHTML = '';
-            notes.forEach(note => {
-                const noteItem = document.createElement('div');
-                noteItem.className = 'note-item';
-                noteItem.innerHTML = `
-                    <div class="note-title">${escapeHtml(note.title)}</div>
-                    <div class="note-content">${escapeHtml(note.content)}</div>
-                    <div class="note-actions">
-                        <button class="edit-btn" onclick="editNote('${note.id}')">编辑</button>
-                        <button class="delete-btn" onclick="deleteNote('${note.id}')">删除</button>
-                    </div>
-                `;
-                notesList.appendChild(noteItem);
-            });
-        }
+// 删除
+function bindDelete() {
+  document.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation()
+      const wrap = btn.closest('.card-wrapper')
+      const id = +wrap.dataset.id
+      if (confirm('确定删除？')) {
+        wrap.style.opacity = 0
+        setTimeout(() => {
+          saveNotes(getNotes().filter(x => x.id !== id))
+        }, 300)
+      } else {
+        wrap.querySelector('.card').style.transform = 'translateX(0)'
+      }
+    })
+  })
+}
 
-        // 从本地存储获取便签
-        function getNotes() {
-            const notesStr = localStorage.getItem('simpleNotes');
-            return notesStr ? JSON.parse(notesStr) : [];
-        }
+// 撤销/重做
+function saveState() {
+  const title = document.getElementById('noteTitle').value
+  const content = document.getElementById('noteContent').value
+  undoStack.push({ title, content })
+  redoStack = []
+  updateUndoRedoBtn()
+}
+function updateUndoRedoBtn() {
+  document.getElementById('undoBtn').style.opacity = undoStack.length > 1 ? '1' : '0.3'
+  document.getElementById('redoBtn').style.opacity = redoStack.length > 0 ? '1' : '0.3'
+}
+function undo() {
+  if (undoStack.length <= 1) return
+  const current = undoStack.pop()
+  redoStack.push(current)
+  const prev = undoStack[undoStack.length - 1]
+  document.getElementById('noteTitle').value = prev.title
+  document.getElementById('noteContent').value = prev.content
+  updateEditorInfo()
+  updateUndoRedoBtn()
+}
+function redo() {
+  if (redoStack.length === 0) return
+  const next = redoStack.pop()
+  undoStack.push(next)
+  document.getElementById('noteTitle').value = next.title
+  document.getElementById('noteContent').value = next.content
+  updateEditorInfo()
+  updateUndoRedoBtn()
+}
 
-        // 保存便签到本地存储
-        function saveNotes(notes) {
-            localStorage.setItem('simpleNotes', JSON.stringify(notes));
-        }
+// 自动保存
+function autoSave() {
+  const title = document.getElementById('noteTitle').value.trim()
+  const content = document.getElementById('noteContent').value.trim()
+  if (!content && !title) return
+  const notes = getNotes()
+  const finalTitle = title || content.split('\n')[0] || '无标题'
 
-        // 清空输入框
-        function clearInput() {
-            document.getElementById('noteTitle').value = '';
-            document.getElementById('noteContent').value = '';
-        }
+  if (currentId === null) {
+    notes.unshift({ id: Date.now(), title: finalTitle, content, time: timeStr() })
+  } else {
+    const i = notes.findIndex(x => x.id === currentId)
+    if (i >= 0) {
+      notes[i].title = finalTitle
+      notes[i].content = content
+      notes[i].time = timeStr()
+    }
+  }
+  saveNotes(notes)
+}
 
-        // HTML转义，防止XSS
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-    </script>
+// 页面切换
+function goHome() {
+  autoSave()
+  document.getElementById('editor').style.display = 'none'
+  document.getElementById('home').style.display = 'block'
+  resetAll()
+  undoStack = []
+  redoStack = []
+  updateUndoRedoBtn()
+}
+function goEdit(id = null) {
+  currentId = id
+  const titleInput = document.getElementById('noteTitle')
+  const contentInput = document.getElementById('noteContent')
+
+  if (id === null) {
+    titleInput.value = ''
+    contentInput.value = ''
+  } else {
+    const note = getNotes().find(x => x.id === id)
+    titleInput.value = note ? note.title : ''
+    contentInput.value = note ? note.content : ''
+  }
+
+  document.getElementById('home').style.display = 'none'
+  document.getElementById('editor').style.display = 'block'
+  titleInput.focus()
+  updateEditorInfo()
+  saveState()
+}
+
+function edit(id) {
+  goEdit(id)
+}
+
+// 暗色模式
+function initDark() {
+  const dark = localStorage.getItem('dark') === '1'
+  document.body.classList.toggle('dark', dark)
+  document.getElementById('toggleDark').textContent = dark ? '浅色模式' : '暗色模式'
+}
+function toggleDark() {
+  const dark = !document.body.classList.contains('dark')
+  document.body.classList.toggle('dark', dark)
+  localStorage.setItem('dark', dark ? '1' : '0')
+  document.getElementById('toggleDark').textContent = dark ? '浅色模式' : '暗色模式'
+}
+
+// 绑定事件
+document.getElementById('add').onclick = () => goEdit()
+document.getElementById('back').onclick = goHome
+document.getElementById('toggleDark').onclick = toggleDark
+document.getElementById('undoBtn').onclick = undo
+document.getElementById('redoBtn').onclick = redo
+
+// 输入时更新
+document.getElementById('noteTitle').addEventListener('input', () => {
+  updateEditorInfo()
+  saveState()
+})
+document.getElementById('noteContent').addEventListener('input', () => {
+  updateEditorInfo()
+  saveState()
+})
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.card') && !e.target.closest('.delete-btn')) resetAll()
+})
+
+initDark()
+render()
+</script>
 </body>
 </html>

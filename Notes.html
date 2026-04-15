@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简易便签</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .input-area {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .notes-list {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .note-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .note-item:last-child {
+            border-bottom: none;
+        }
+
+        .note-title {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .note-content {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+        .note-actions {
+            text-align: right;
+        }
+
+        .note-actions button {
+            margin-left: 10px;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
+        .edit-btn {
+            background-color: #28a745;
+        }
+
+        .edit-btn:hover {
+            background-color: #218838;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>简易便签</h1>
+
+    <div class="input-area">
+        <input type="text" id="noteTitle" placeholder="标题">
+        <textarea id="noteContent" placeholder="内容"></textarea>
+        <button onclick="saveNote()">保存</button>
+    </div>
+
+    <div class="notes-list" id="notesList">
+        <div class="empty-state">暂无便签</div>
+    </div>
+
+    <script>
+        // 全局变量存储当前编辑的便签ID
+        let currentEditId = null;
+
+        // 页面加载时渲染便签
+        document.addEventListener('DOMContentLoaded', renderNotes);
+
+        // 保存便签
+        function saveNote() {
+            const title = document.getElementById('noteTitle').value.trim();
+            const content = document.getElementById('noteContent').value.trim();
+
+            if (!title || !content) {
+                alert('标题和内容不能为空！');
+                return;
+            }
+
+            const notes = getNotes();
+
+            if (currentEditId) {
+                // 编辑模式
+                const index = notes.findIndex(note => note.id === currentEditId);
+                if (index !== -1) {
+                    notes[index].title = title;
+                    notes[index].content = content;
+                }
+                currentEditId = null;
+            } else {
+                // 新建模式
+                const newNote = {
+                    id: Date.now().toString(),
+                    title: title,
+                    content: content
+                };
+                notes.push(newNote);
+            }
+
+            saveNotes(notes);
+            renderNotes();
+            clearInput();
+        }
+
+        // 编辑便签
+        function editNote(id) {
+            const notes = getNotes();
+            const note = notes.find(note => note.id === id);
+            if (note) {
+                document.getElementById('noteTitle').value = note.title;
+                document.getElementById('noteContent').value = note.content;
+                currentEditId = id;
+                // 滚动到输入区域
+                document.querySelector('.input-area').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // 删除便签
+        function deleteNote(id) {
+            if (confirm('确定要删除吗？')) {
+                let notes = getNotes();
+                notes = notes.filter(note => note.id !== id);
+                saveNotes(notes);
+                renderNotes();
+            }
+        }
+
+        // 渲染便签列表
+        function renderNotes() {
+            const notes = getNotes();
+            const notesList = document.getElementById('notesList');
+
+            if (notes.length === 0) {
+                notesList.innerHTML = '<div class="empty-state">暂无便签</div>';
+                return;
+            }
+
+            notesList.innerHTML = '';
+            notes.forEach(note => {
+                const noteItem = document.createElement('div');
+                noteItem.className = 'note-item';
+                noteItem.innerHTML = `
+                    <div class="note-title">${escapeHtml(note.title)}</div>
+                    <div class="note-content">${escapeHtml(note.content)}</div>
+                    <div class="note-actions">
+                        <button class="edit-btn" onclick="editNote('${note.id}')">编辑</button>
+                        <button class="delete-btn" onclick="deleteNote('${note.id}')">删除</button>
+                    </div>
+                `;
+                notesList.appendChild(noteItem);
+            });
+        }
+
+        // 从本地存储获取便签
+        function getNotes() {
+            const notesStr = localStorage.getItem('simpleNotes');
+            return notesStr ? JSON.parse(notesStr) : [];
+        }
+
+        // 保存便签到本地存储
+        function saveNotes(notes) {
+            localStorage.setItem('simpleNotes', JSON.stringify(notes));
+        }
+
+        // 清空输入框
+        function clearInput() {
+            document.getElementById('noteTitle').value = '';
+            document.getElementById('noteContent').value = '';
+        }
+
+        // HTML转义，防止XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
